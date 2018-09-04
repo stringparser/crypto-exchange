@@ -8,6 +8,7 @@ import { timeMinute, timeDay, timeHour } from 'd3-time';
 import { AreaClosed } from '@vx/shape';
 import { AxisBottom } from '@vx/axis';
 import { curveMonotoneX } from '@vx/curve';
+import { GridRows, GridColumns } from '@vx/grid';
 import { scaleTime, scaleLinear } from '@vx/scale';
 
 import FlexLayout from '../layout/FlexLayout';
@@ -228,6 +229,20 @@ class CoinStockArea extends Component<Props, State> {
                 />
               </linearGradient>
             </defs>
+            <GridRows
+              lineStyle={{ pointerEvents: 'none' }}
+              scale={yScale}
+              width={width}
+              strokeDasharray="2,2"
+              stroke="rgba(255,255,255,0.3)"
+            />
+            <GridColumns
+              lineStyle={{ pointerEvents: 'none' }}
+              scale={xScale}
+              height={height}
+              strokeDasharray="2,2"
+              stroke="rgba(255,255,255,0.3)"
+            />
             <AreaClosed
               x={xStock}
               y={yStock}

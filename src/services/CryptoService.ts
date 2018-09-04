@@ -59,6 +59,16 @@ async (fsym = 'BTC', tsym = 'EUR', limit = 500): Promise<CoinHistory[]> => {
   return body.Data;
 };
 
+export const getHistoHour =
+  async (fsym = 'BTC', tsym = 'EUR', limit = 500): Promise<CoinHistory[]> => {
+    const res = await fetch(
+      `${CRYPTO_API}/data/histohour?fsym=${fsym}&tsym=${tsym}&limit=${limit}&tryConversion=false`
+    );
+    const body: { Data: CoinHistory[] } = await res.json();
+
+    return body.Data;
+  };
+
 type SocketSubscriptions = {
   [coinName: string]: {
     SubsNeeded: string[];
