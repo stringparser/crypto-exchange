@@ -3,14 +3,17 @@ import { Component, RefObject, createRef } from 'react';
 
 import { coinColors } from './constants';
 
-import { extent } from 'd3-array';
 import { timeFormat } from 'd3-time-format';
-import { AreaClosed } from '@vx/shape';
+import { extent, bisector } from 'd3-array';
+import { timeMinute, timeDay, timeHour } from 'd3-time';
+
+import { AreaClosed, Line, Bar } from '@vx/shape';
 import { AxisBottom } from '@vx/axis';
+import { localPoint } from '@vx/event';
 import { curveMonotoneX } from '@vx/curve';
 import { GridRows, GridColumns } from '@vx/grid';
 import { scaleTime, scaleLinear } from '@vx/scale';
-import { timeMinute, timeDay, timeHour } from 'd3-time';
+import { withTooltip, Tooltip } from '@vx/tooltip';
 
 import FlexLayout from '../layout/FlexLayout';
 import { CoinItem, CoinHistory } from '../../services/CryptoService';
@@ -22,8 +25,12 @@ type StockAreaItem = {
 
 // accessors
 const xStock = (d: StockAreaItem) => new Date(d.time * 1000);
-const yStock = (d: StockAreaItem) => d.close;
+const yStock = (d: StockAreaItem) => {
+  const [whole, decimals] = d.close.toString().split('.')
+  return parseFloat(`${whole}.${(decimals || '00').slice(0, 2)}`);
+};
 const formatDate = timeFormat('%H:%M');
+const bisectDate = bisector((d: StockAreaItem) => new Date(d.time * 1000)).left;
 
 const PlotContainer = styled<Pick<Props, 'onClick'>, 'div'>('div')`
   color: white;
@@ -89,6 +96,12 @@ type Props = {
   onClick?: (ev: React.SyntheticEvent<HTMLElement>) => void;
   showAxis?: boolean;
   showControls?: boolean;
+  // tooltip
+  showTooltip?: (...args: any[]) => void;
+  hideTooltip?: (...args: any[]) => void;
+  tooltipTop?: number;
+  tooltipLeft?: number;
+  tooltipData?: any;
 };
 
 type State = {
@@ -111,6 +124,30 @@ class CoinStockArea extends Component<Props, State> {
     super(props, context);
 
     this.svg = createRef<SVGSVGElement>();
+  }
+
+  handleTooltip = ({ event, data, xStock, xScale, yScale }) => {
+    const { x } = localPoint(event);
+    const { showTooltip } = this.props;
+
+    const x0 = xScale.invert(x);
+    const index = bisectDate(data, x0, 1);
+
+    const d0 = data[index - 1];
+    const d1 = data[index];
+    let d = d0;
+
+    if (d1 && d1.time) {
+      d = x0 - xStock(d0.time) > xStock(d1.time) - x0 ? d1 : d0;
+    } else {
+      d = d0;
+    }
+
+    showTooltip({
+      tooltipTop: yScale(d.close),
+      tooltipData: d,
+      tooltipLeft: x,
+    });
   }
 
   onChangeAgreggation = (ev: React.SyntheticEvent<HTMLSelectElement>) => {
@@ -165,6 +202,11 @@ class CoinStockArea extends Component<Props, State> {
       height,
       showAxis,
       showControls,
+      // tooltip
+      tooltipTop,
+      tooltipLeft,
+      tooltipData,
+      hideTooltip,
     } = this.props;
 
 
@@ -172,9 +214,10 @@ class CoinStockArea extends Component<Props, State> {
     const { aggregateBy } = this.state;
 
     // scales
+    const xMax = width;
     const xScale = scaleTime({
       nice: true,
-      range: [0, width],
+      range: [0, xMax],
       domain: extent(stock, xStock),
     });
 
@@ -183,9 +226,10 @@ class CoinStockArea extends Component<Props, State> {
       14
     );
 
+    const yMax = height;
     const yScale = scaleLinear({
       nice: true,
-      range: [height, 0],
+      range: [yMax, 0],
       domain: extent(stock, yStock),
     });
 
@@ -244,8 +288,8 @@ class CoinStockArea extends Component<Props, State> {
               lineStyle={{ pointerEvents: 'none' }}
               scale={xScale}
               height={height}
-              strokeDasharray="2,2"
               stroke="rgba(255,255,255,0.3)"
+              strokeDasharray="2,2"
             />
             <AreaClosed
               x={xStock}
@@ -267,7 +311,96 @@ class CoinStockArea extends Component<Props, State> {
               tickFormat={(value: Date) => formatDate(value)}
               hideAxisLine={true}
             />}
+            <Bar
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              fill="transparent"
+              rx={14}
+              data={stock}
+              onTouchStart={data => event =>
+                this.handleTooltip({
+                  event,
+                  data,
+                  xStock,
+                  xScale,
+                  yScale,
+                })}
+              onTouchMove={data => event =>
+                this.handleTooltip({
+                  event,
+                  data,
+                  xStock,
+                  xScale,
+                  yScale,
+                })}
+              onMouseMove={data => event =>
+                this.handleTooltip({
+                  event,
+                  data,
+                  xStock,
+                  xScale,
+                  yScale,
+                })}
+              onMouseLeave={() => () => hideTooltip()}
+            />
+            {tooltipData && (
+              <g>
+                <Line
+                  from={{ x: tooltipLeft, y: 0 }}
+                  to={{ x: tooltipLeft, y: yMax }}
+                  stroke="rgba(0,0,0,0.6)"
+                  strokeWidth={2}
+                  style={{ pointerEvents: 'none' }}
+                  strokeDasharray="2,2"
+                />
+                <circle
+                  cx={tooltipLeft}
+                  cy={tooltipTop + 1}
+                  r={4}
+                  fill="black"
+                  fillOpacity={0.1}
+                  stroke="black"
+                  strokeOpacity={0.1}
+                  strokeWidth={2}
+                  style={{ pointerEvents: 'none' }}
+                />
+                <circle
+                  cx={tooltipLeft}
+                  cy={tooltipTop}
+                  r={4}
+                  fill="rgba(0,0,0,0.6)"
+                  stroke="white"
+                  strokeWidth={2}
+                  style={{ pointerEvents: 'none' }}
+                />
+              </g>
+            )}
           </svg>
+          {tooltipData && (
+            <>
+              <Tooltip
+                top={tooltipTop - 12}
+                left={tooltipLeft + 12}
+                style={{
+                  color: 'white',
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                }}
+              >
+                {`$${yStock(tooltipData)}`}
+              </Tooltip>
+              <Tooltip
+                top={yMax - 14}
+                left={tooltipLeft}
+                style={{
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                {formatDate(xStock(tooltipData))}
+              </Tooltip>
+            </>
+          )}
         </PlotContainer>
         {showControls && (
           <div>
@@ -283,4 +416,4 @@ class CoinStockArea extends Component<Props, State> {
   }
 }
 
-export default CoinStockArea;
+export default withTooltip(CoinStockArea);
