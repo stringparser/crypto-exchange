@@ -2,12 +2,12 @@ import styled from 'styled-components';
 import { Component, RefObject, createRef } from 'react';
 
 import { extent } from 'd3-array';
-
 import { AreaClosed } from '@vx/shape';
 import { curveMonotoneX } from '@vx/curve';
 import { scaleTime, scaleLinear } from '@vx/scale';
 
 import { CoinItem } from '../../services/CryptoService';
+
 import { coinColors } from './constants';
 
 type StockAreaItem = {
@@ -112,18 +112,14 @@ class CoinStockArea extends Component<Props> {
       height,
     } = this.props;
 
-    // bounds
-    const xMax = width;
-    const yMax = height;
-
     // scales
     const xScale = scaleTime({
-      range: [0, xMax],
+      range: [0, width],
       domain: extent(stock, xStock),
     });
 
     const yScale = scaleLinear({
-      range: [0, yMax],
+      range: [height, 0],
       domain: extent(stock, yStock),
     });
 
@@ -134,8 +130,8 @@ class CoinStockArea extends Component<Props> {
           <CoinName>{name}</CoinName>
         </CoinTopInfo>
         <CoinBottomInfo>
-          <p>{price}</p>
-          {priceChangeInDay}{'  '}
+          <p>{price}€</p>
+          {priceChangeInDay}{'€ '}
           <span style={{marginRight: '10px'}} />
           <PercChangeIcon value={priceChangeInDayPerc} /> {priceChangeInDayPerc}%
         </CoinBottomInfo>
