@@ -1,80 +1,56 @@
 import fetch from 'isomorphic-unfetch';
-import { CRYPTO_API, CRYPTO_URL } from './constants';
+import { CRYPTO_API, CRYPTO_COINS, CRYPTO_ICONS_URL } from './constants';
+import { mock, histoMinute, priceMultifull } from './mocks';
 
-type TopCoinList = {
-  Type: number;
-  Data: TopCoinItem[];
-  Message: string;
+export type CoinItem = {
+  name: string;
+  iconUrl: string;
+  histoMinute: CoinHistory[];
+  price: string;
+  priceChangeInDay: string;
+  priceChangeInDayPerc: string;
 };
 
-type TopCoinItem = {
-  CoinInfo: {
-    Id: string;
-    Url: string;
-    Name: string;
-    Type: number;
-    FullName: string;
-    Internal: string;
-    ImageUrl: string;
-    Algorithm: string;
-    ProofType: string;
-    BlockTime: number;
-    BlockReward: number;
-    BlockNumber: number;
-    DocumentType: string;
-    NetHashesPerSecond: number;
-  },
-  ConversionInfo: {
-    RAW: string[];
-    Market: string;
-    Supply: number;
-    SubBase: string;
-    Conversion: string;
-    CurrencyTo: string;
-    SubsNeeded: string[];
-    CurrencyFrom: string;
-    TotalVolume24H: number;
-    ConversionSymbol: string;
+export const getCurrentCoinPosition = async (tsym = 'EUR'): Promise<CoinItem[]> => {
+  const res = await fetch(`${CRYPTO_API}/data/pricemultifull?fsyms=${CRYPTO_COINS}&tsyms=${tsym}`);
+  const body: (typeof priceMultifull) = await res.json();
+  const coins = Object.keys(body.RAW).slice(0, 3);
+  const priceDisplay = priceMultifull.DISPLAY;
+
+  return Promise.all(
+    coins.map(async (name: string) => {
+      const display: (typeof priceDisplay)[keyof typeof priceDisplay] = body.DISPLAY[name];
+      return {
+        name: name,
+        iconUrl: `${CRYPTO_ICONS_URL}/${name.toLowerCase()}.svg`,
+        histoMinute: await getHistoMinute(name),
+        price: display.EUR.PRICE.split(/\s+/).reverse().join(' '),
+        priceChangeInDay: display.EUR.CHANGEDAY.split(/\s+/).reverse().join(' '),
+        priceChangeInDayPerc: display.EUR.CHANGEPCTDAY.split(/\s+/).reverse().join(' '),
+      };
+    })
+  );
+}
+
+type CoinHistory = {
+  low: number;
+  high: number;
+  time: number;
+  open: number;
+  close: number;
+  volumeto: number;
+  volumefrom: number;
+};
+
+export const getHistoMinute = mock(
+  histoMinute,
+  false,
+  async function getHistoMinute(fsym = 'BTC', tsym = 'EUR', limit = 100): Promise<CoinHistory[]> {
+    const res = await fetch(
+      `${CRYPTO_API}/data/histominute?fsym=${fsym}&tsym=${tsym}&limit=${limit}&tryConversion=false`
+    );
+    const body: { Data: CoinHistory[] } = await res.json();
+
+    return body.Data;
   }
-};
-
-function toAbsoluteUrl(url: string) {
-  return /^\//.test(url)
-    ? `${CRYPTO_URL}${url}`
-    : url
-  ;
-}
-
-export async function getTopCoinList(limit = 10, tsym = 'EUR'): Promise<TopCoinItem[]> {
-  const res = await fetch(`${CRYPTO_API}/data/top/totalvol?limit=${limit}&tsym=${tsym}`)
-  const body: TopCoinList = await res.json();
-
-  return body.Data.map(el => ({
-    ...el,
-    CoinInfo: {
-      ...el.CoinInfo,
-      Url: toAbsoluteUrl(el.CoinInfo.Url),
-      ImageUrl: toAbsoluteUrl(el.CoinInfo.ImageUrl),
-    }
-  }));
-}
-
-type ActiveExchanges = {
-  [name: string]: {
-    isActive: boolean;
-  };
-};
-
-export async function getActiveExchanges() {
-  const res = await fetch(`${CRYPTO_API}/data/all/cccaggexchanges`);
-  const body: ActiveExchanges = await res.json();
-
-  return Object.entries(body)
-    .reduce((acc, [key, value]) => {
-      if (value.isActive) {
-        acc.push(key);
-      }
-      return acc;
-    }, [])
-  ;
-}
+);
