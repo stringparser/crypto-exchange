@@ -3,8 +3,8 @@ import { Component, RefObject, createRef } from 'react';
 
 import { extent } from 'd3-array';
 import { AreaClosed } from '@vx/shape';
+import { AxisBottom } from '@vx/axis';
 import { curveMonotoneX } from '@vx/curve';
-import { AxisBottom, AxisRight } from '@vx/axis';
 import { scaleTime, scaleLinear } from '@vx/scale';
 
 import { CoinItem } from '../../services/CryptoService';
@@ -20,9 +20,6 @@ type StockAreaItem = {
 const xStock = (d: StockAreaItem) => new Date(d.time * 1000);
 const yStock = (d: StockAreaItem) => d.close;
 
-// styles
-const gutter = 10;
-
 const PlotContainer = styled<Pick<Props, 'onClick'>, 'div'>('div')`
   color: white;
   stroke: white;
@@ -32,16 +29,26 @@ const PlotContainer = styled<Pick<Props, 'onClick'>, 'div'>('div')`
   ${({ onClick }) => onClick && 'cursor: pointer;'}
 `;
 
-const CoinTopInfo = styled.div`
-  top: ${gutter * 2}px;
-  left: ${gutter * 2}px;
+const CoinSymbols = styled.div`
+  top: 10px;
+  left: 15px;
   position: absolute;
 
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  margin-right: 10px;
+`;
 
-  & > *:not(:first-child) {
-    margin-left: 5px;
+const CoinValues = styled.div`
+  left: 15px;
+  bottom: 35px;
+  position: absolute;
+
+  display: block;
+  white-space: pre-line;
+
+  p {
+    margin: 0;
   }
 `;
 
@@ -50,20 +57,6 @@ const CoinIcon = styled.img`
   max-width: 25px;
   max-height: 25px;
   border-radius: 50%;
-`;
-
-const CoinBottomInfo = styled.div`
-  left: ${gutter * 2}px;
-  bottom: ${gutter * 2.5}px;
-  position: absolute;
-
-  display: block;
-  align-items: center;
-  white-space: pre-line;
-
-  p {
-    margin: 0;
-  }
 `;
 
 type PercChangeIconProps = {
@@ -89,12 +82,14 @@ type Props = {
   width?: number;
   height?: number;
   onClick?: (ev: React.SyntheticEvent<HTMLElement>) => void;
+  showAxis?: boolean;
 };
 
 class CoinStockArea extends Component<Props> {
   static defaultProps: Props = {
     width: 360,
     height: 220,
+    showAxis: true,
   };
 
   private svg: RefObject<SVGSVGElement>;
@@ -117,32 +112,35 @@ class CoinStockArea extends Component<Props> {
       },
       width,
       height,
+      showAxis,
     } = this.props;
 
     // scales
     const xScale = scaleTime({
+      nice: true,
       range: [0, width],
       domain: extent(stock, xStock),
     });
 
     const yScale = scaleLinear({
+      nice: true,
       range: [height, 0],
       domain: extent(stock, yStock),
     });
 
     return (
       <PlotContainer onClick={this.props.onClick}>
-        <CoinTopInfo>
+        <CoinSymbols>
           <CoinIcon src={iconUrl} />
           <CoinName>{name}</CoinName>
-        </CoinTopInfo>
-        <CoinBottomInfo>
+        </CoinSymbols>
+        <CoinValues>
           <p>{price}€</p>
           {priceChangeInDay}{'€ '}
-          <span style={{marginRight: '10px'}} />
+          <span style={{ marginRight: '10px' }} />
           <PercChangeIcon value={priceChangeInDayPerc} /> {priceChangeInDayPerc}%
           {lastMarket ? ` (${lastMarket})` : null}
-        </CoinBottomInfo>
+        </CoinValues>
         <svg ref={this.svg} width={width} height={height}>
           <rect
             x={0}
@@ -173,22 +171,6 @@ class CoinStockArea extends Component<Props> {
               />
             </linearGradient>
           </defs>
-
-          <AxisBottom
-            top={height - 25}
-            left={0}
-            scale={xScale}
-            hideTicks={true}
-            hideAxisLine={true}
-          />
-          <AxisRight
-            top={0}
-            left={width - 37.5}
-            scale={yScale}
-            stroke="#fff"
-            hideTicks={true}
-            hideAxisLine={true}
-          />
           <AreaClosed
             x={xStock}
             y={yStock}
@@ -200,6 +182,13 @@ class CoinStockArea extends Component<Props> {
             yScale={yScale}
             strokeWidth={1}
           />
+          {showAxis && <AxisBottom
+            top={height - 25}
+            left={0}
+            scale={xScale}
+            hideTicks={true}
+            hideAxisLine={true}
+          />}
         </svg>
       </PlotContainer>
     );
