@@ -4,12 +4,13 @@ import { Component, RefObject, createRef } from 'react';
 import { coinColors } from './constants';
 
 import { extent } from 'd3-array';
-import { timeMinute, timeDay, timeHour } from 'd3-time';
+import { timeFormat } from 'd3-time-format';
 import { AreaClosed } from '@vx/shape';
 import { AxisBottom } from '@vx/axis';
 import { curveMonotoneX } from '@vx/curve';
 import { GridRows, GridColumns } from '@vx/grid';
 import { scaleTime, scaleLinear } from '@vx/scale';
+import { timeMinute, timeDay, timeHour } from 'd3-time';
 
 import FlexLayout from '../layout/FlexLayout';
 import { CoinItem, CoinHistory } from '../../services/CryptoService';
@@ -22,6 +23,7 @@ type StockAreaItem = {
 // accessors
 const xStock = (d: StockAreaItem) => new Date(d.time * 1000);
 const yStock = (d: StockAreaItem) => d.close;
+const formatDate = timeFormat('%H:%M');
 
 const PlotContainer = styled<Pick<Props, 'onClick'>, 'div'>('div')`
   color: white;
@@ -125,9 +127,6 @@ class CoinStockArea extends Component<Props, State> {
     const endTime = new Date(stock[stock.length - 1].time * 1000);
     const startTime = new Date(stock[0].time * 1000);
 
-    console.log('endTime', endTime);
-    console.log('startTime', startTime);
-
     const intervals = (
       aggregateBy === 'day' && timeDay.range(startTime, endTime) ||
       aggregateBy === 'hour' && timeHour.range(startTime, endTime) ||
@@ -178,6 +177,11 @@ class CoinStockArea extends Component<Props, State> {
       range: [0, width],
       domain: extent(stock, xStock),
     });
+
+    const xNumTicks = (
+      aggregateBy === 'hour' && 12 ||
+      14
+    );
 
     const yScale = scaleLinear({
       nice: true,
@@ -258,7 +262,9 @@ class CoinStockArea extends Component<Props, State> {
               top={height - 30}
               left={0}
               scale={xScale}
+              numTicks={xNumTicks}
               hideTicks={true}
+              tickFormat={(value: Date) => formatDate(value)}
               hideAxisLine={true}
             />}
           </svg>

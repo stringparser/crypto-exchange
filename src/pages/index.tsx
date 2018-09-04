@@ -84,8 +84,8 @@ class Home extends Component {
           <PageSection>
             <CoinStockArea
               coin={selectedCoin}
-              width={500}
-              height={300}
+              width={765}
+              height={400}
               showAxis={true}
               showControls={true}
             />
