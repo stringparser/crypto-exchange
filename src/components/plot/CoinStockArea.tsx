@@ -39,9 +39,9 @@ const CoinSymbols = styled.div`
   margin-right: 10px;
 `;
 
-const CoinValues = styled.div`
+const CoinValues = styled<Pick<Props, 'showAxis'>, 'div'>('div')`
   left: 15px;
-  bottom: 35px;
+  bottom: ${({ showAxis }) => showAxis ? '30px' : '15px' };
   position: absolute;
 
   display: block;
@@ -88,8 +88,7 @@ type Props = {
 class CoinStockArea extends Component<Props> {
   static defaultProps: Props = {
     width: 360,
-    height: 220,
-    showAxis: true,
+    height: 160,
   };
 
   private svg: RefObject<SVGSVGElement>;
@@ -134,7 +133,7 @@ class CoinStockArea extends Component<Props> {
           <CoinIcon src={iconUrl} />
           <CoinName>{name}</CoinName>
         </CoinSymbols>
-        <CoinValues>
+        <CoinValues showAxis={showAxis}>
           <p>{price}€</p>
           {priceChangeInDay}{'€ '}
           <span style={{ marginRight: '10px' }} />
@@ -183,7 +182,7 @@ class CoinStockArea extends Component<Props> {
             strokeWidth={1}
           />
           {showAxis && <AxisBottom
-            top={height - 25}
+            top={height - 30}
             left={0}
             scale={xScale}
             hideTicks={true}

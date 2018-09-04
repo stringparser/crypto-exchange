@@ -89,6 +89,7 @@ class Home extends Component {
               coin={selectedCoin}
               width={500}
               height={300}
+              showAxis={true}
             />
           </PageSection>
         }
