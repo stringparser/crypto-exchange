@@ -15,6 +15,8 @@ export function parseWebSocketMessage(message: string, coins: CoinItem[]): null 
     ToCurrency,
     Flag,
     Price,
+    _a,
+    _b,
     LastUpdate,
     LastVolume,
     LastVolumeTo,
@@ -23,7 +25,6 @@ export function parseWebSocketMessage(message: string, coins: CoinItem[]): null 
     Volume24hTo,
     lastMarket,
   ] = message.split('~');
-
   // Flag is for 1: price up, 2: price down, 4: prince unchanged
   // see: https://www.cryptocompare.com/api#-api-web-socket-current-
   if (!/^(1|2)$/.test(Flag)) {
@@ -43,10 +44,10 @@ export function parseWebSocketMessage(message: string, coins: CoinItem[]): null 
     histoMinute: coin.histoMinute.concat({
       time: Math.floor(Date.now() / 1000),
       close: priceNum,
-      volumeto: parseFloat(Volume24hTo),
-      volumefrom: parseFloat(Volume24h)
+      volumeto: parseFloat(Volume24hTo) || undefined,
+      volumefrom: parseFloat(Volume24h) || undefined
     }),
-    lastMarket: /^[a-z]/.test(lastMarket) ? lastMarket : undefined,
+    lastMarket: /^[a-z]+$/i.test(lastMarket) ? lastMarket : 'CryptoCompare',
     priceChangeInDay: formatNumber(`${priceNum - firstTrade.close}`),
     priceChangeInDayPerc: formatNumber(`${(priceNum - firstTrade.close) * 100 / firstTrade.close}`),
   });

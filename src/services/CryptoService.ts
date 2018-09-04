@@ -20,7 +20,7 @@ function parserCurrency(input: string) {
 export const getCurrentCoinPosition = async (tsym = 'EUR'): Promise<CoinItem[]> => {
   const res = await fetch(`${CRYPTO_API}/data/pricemultifull?fsyms=${CRYPTO_COINS}&tsyms=${tsym}`);
   const body: (typeof priceMultifull) = await res.json();
-  const coins = Object.keys(body.RAW);
+  const coins = Object.keys(body.RAW).slice(0, 5);
   const priceDisplay = priceMultifull.DISPLAY;
 
   return Promise.all(

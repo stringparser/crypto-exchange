@@ -104,6 +104,7 @@ class CoinStockArea extends Component<Props> {
         name,
         price,
         iconUrl,
+        lastMarket,
         histoMinute: stock,
         priceChangeInDay,
         priceChangeInDayPerc,
@@ -134,6 +135,7 @@ class CoinStockArea extends Component<Props> {
           {priceChangeInDay}{'€ '}
           <span style={{marginRight: '10px'}} />
           <PercChangeIcon value={priceChangeInDayPerc} /> {priceChangeInDayPerc}%
+          {lastMarket ? ` (${lastMarket})` : null}
         </CoinBottomInfo>
         <svg ref={this.svg} width={width} height={height}>
           <rect
