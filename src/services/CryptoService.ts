@@ -3,6 +3,17 @@ import { priceMultifull } from './mocks';
 
 import { CRYPTO_API, CRYPTO_COINS, CRYPTO_ICONS_URL } from './constants';
 
+export type CoinHistory = {
+  low?: number;
+  high?: number;
+  time: number;
+  open?: number;
+  close: number;
+  market?: string;
+  volumeto?: number;
+  volumefrom?: number;
+};
+
 export type CoinItem = {
   name: string;
   price: string;
@@ -20,7 +31,7 @@ function parserCurrency(input: string) {
 export const getCurrentCoinPosition = async (tsym = 'EUR'): Promise<CoinItem[]> => {
   const res = await fetch(`${CRYPTO_API}/data/pricemultifull?fsyms=${CRYPTO_COINS}&tsyms=${tsym}`);
   const body: (typeof priceMultifull) = await res.json();
-  const coins = Object.keys(body.RAW).slice(0, 5);
+  const coins = Object.keys(body.RAW).slice(0, 1);
   const priceDisplay = priceMultifull.DISPLAY;
 
   return Promise.all(
@@ -37,17 +48,6 @@ export const getCurrentCoinPosition = async (tsym = 'EUR'): Promise<CoinItem[]> 
     })
   );
 }
-
-type CoinHistory = {
-  low?: number;
-  high?: number;
-  time: number;
-  open?: number;
-  close: number;
-  market?: string;
-  volumeto?: number;
-  volumefrom?: number;
-};
 
 export const getHistoMinute =
 async (fsym = 'BTC', tsym = 'EUR', limit = 500): Promise<CoinHistory[]> => {

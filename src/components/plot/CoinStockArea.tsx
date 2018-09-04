@@ -1,15 +1,17 @@
 import styled from 'styled-components';
 import { Component, RefObject, createRef } from 'react';
 
+import { coinColors } from './constants';
+
 import { extent } from 'd3-array';
+import { timeMinute, timeDay, timeHour } from 'd3-time';
 import { AreaClosed } from '@vx/shape';
 import { AxisBottom } from '@vx/axis';
 import { curveMonotoneX } from '@vx/curve';
 import { scaleTime, scaleLinear } from '@vx/scale';
 
-import { CoinItem } from '../../services/CryptoService';
-
-import { coinColors } from './constants';
+import FlexLayout from '../layout/FlexLayout';
+import { CoinItem, CoinHistory } from '../../services/CryptoService';
 
 type StockAreaItem = {
   time: number;
@@ -83,9 +85,18 @@ type Props = {
   height?: number;
   onClick?: (ev: React.SyntheticEvent<HTMLElement>) => void;
   showAxis?: boolean;
+  showControls?: boolean;
 };
 
-class CoinStockArea extends Component<Props> {
+type State = {
+  aggregateBy?: 'day' | 'hour' | 'minute';
+};
+
+class CoinStockArea extends Component<Props, State> {
+  state: State = {
+    aggregateBy: 'minute',
+  };
+
   static defaultProps: Props = {
     width: 360,
     height: 160,
@@ -95,7 +106,48 @@ class CoinStockArea extends Component<Props> {
 
   constructor(props: Props, context: object) {
     super(props, context);
+
     this.svg = createRef<SVGSVGElement>();
+  }
+
+  onChangeAgreggation = (ev: React.SyntheticEvent<HTMLSelectElement>) => {
+    const value = ev.currentTarget.value as State['aggregateBy'];
+
+    if (/^(hour|minute)$/.test(value)) {
+      this.setState({ aggregateBy: value });
+    }
+  }
+
+  getPlotDomains(stock: CoinHistory[]): CoinHistory[] {
+    const { aggregateBy } = this.state;
+
+    const endTime = new Date(stock[stock.length - 1].time * 1000);
+    const startTime = new Date(stock[0].time * 1000);
+
+    console.log('endTime', endTime);
+    console.log('startTime', startTime);
+
+    const intervals = (
+      aggregateBy === 'day' && timeDay.range(startTime, endTime) ||
+      aggregateBy === 'hour' && timeHour.range(startTime, endTime) ||
+      timeMinute.range(startTime, endTime)
+    );
+
+    return intervals
+      .map(el => el.getTime() / 1000)
+      .map((utime, index, utimes) => {
+        const prev = utimes[index - 1] || 0;
+        const next = utimes[index + 1] || 2 * Date.now();
+        const values = stock.filter(el => el.time >= prev && el.time <= next);
+
+        return {
+          low: values.reduce((acc, el) => acc > el.close ? el.close : acc, 1E+6),
+          high: values.reduce((acc, el) => acc < el.close ? el.close : acc, 0),
+          time: utime,
+          close: values.reduce((acc, el) => acc + el.close, 0) / values.length,
+        };
+      })
+    ;
   }
 
   render() {
@@ -105,14 +157,19 @@ class CoinStockArea extends Component<Props> {
         price,
         iconUrl,
         lastMarket,
-        histoMinute: stock,
+        histoMinute,
         priceChangeInDay,
         priceChangeInDayPerc,
       },
       width,
       height,
       showAxis,
+      showControls,
     } = this.props;
+
+
+    const stock = this.getPlotDomains(histoMinute);
+    const { aggregateBy } = this.state;
 
     // scales
     const xScale = scaleTime({
@@ -128,68 +185,79 @@ class CoinStockArea extends Component<Props> {
     });
 
     return (
-      <PlotContainer onClick={this.props.onClick}>
-        <CoinSymbols>
-          <CoinIcon src={iconUrl} />
-          <CoinName>{name}</CoinName>
-        </CoinSymbols>
-        <CoinValues showAxis={showAxis}>
-          <p>{price}€</p>
-          {priceChangeInDay}{'€ '}
-          <span style={{ marginRight: '10px' }} />
-          <PercChangeIcon value={priceChangeInDayPerc} /> {priceChangeInDayPerc}%
-          {lastMarket ? ` (${lastMarket})` : null}
-        </CoinValues>
-        <svg ref={this.svg} width={width} height={height}>
-          <rect
-            x={0}
-            y={0}
-            rx={4}
-            fill={coinColors[name] || coinColors.defaultColor}
-            width={width}
-            height={height}
-            stroke="transparent"
-          />
-          <defs>
-            <linearGradient
-              id="gradient"
-              x1="0%"
-              y1="0%"
-              x2="0%"
-              y2="100%"
-            >
-              <stop
-                offset="0%"
-                stopColor="#FFFFFF"
-                stopOpacity={0.9}
-              />
-              <stop
-                offset="100%"
-                stopColor="#FFFFFF"
-                stopOpacity={0.1}
-              />
-            </linearGradient>
-          </defs>
-          <AreaClosed
-            x={xStock}
-            y={yStock}
-            data={stock}
-            fill={'url(#gradient)'}
-            curve={curveMonotoneX}
-            stroke={'url(#gradient)'}
-            xScale={xScale}
-            yScale={yScale}
-            strokeWidth={1}
-          />
-          {showAxis && <AxisBottom
-            top={height - 30}
-            left={0}
-            scale={xScale}
-            hideTicks={true}
-            hideAxisLine={true}
-          />}
-        </svg>
-      </PlotContainer>
+      <FlexLayout direction="column">
+        <PlotContainer onClick={this.props.onClick}>
+          <CoinSymbols>
+            <CoinIcon src={iconUrl} />
+            <CoinName>{name}</CoinName>
+          </CoinSymbols>
+          <CoinValues showAxis={showAxis}>
+            <p>{price}€</p>
+            {priceChangeInDay}{'€ '}
+            <span style={{ marginRight: '10px' }} />
+            <PercChangeIcon value={priceChangeInDayPerc} /> {priceChangeInDayPerc}%
+            {lastMarket ? ` (${lastMarket})` : null}
+          </CoinValues>
+          <svg ref={this.svg} width={width} height={height}>
+            <rect
+              x={0}
+              y={0}
+              rx={4}
+              fill={coinColors[name] || coinColors.defaultColor}
+              width={width}
+              height={height}
+              stroke="transparent"
+            />
+            <defs>
+              <linearGradient
+                id="gradient"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="#FFFFFF"
+                  stopOpacity={0.9}
+                />
+                <stop
+                  offset="100%"
+                  stopColor="#FFFFFF"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+            </defs>
+            <AreaClosed
+              x={xStock}
+              y={yStock}
+              data={stock}
+              fill={'url(#gradient)'}
+              curve={curveMonotoneX}
+              stroke={'url(#gradient)'}
+              xScale={xScale}
+              yScale={yScale}
+              strokeWidth={1}
+            />
+            {showAxis && <AxisBottom
+              top={height - 30}
+              left={0}
+              scale={xScale}
+              hideTicks={true}
+              hideAxisLine={true}
+            />}
+          </svg>
+        </PlotContainer>
+        {showControls && (
+          <div>
+            Aggregated by{' '}
+            <select onChange={this.onChangeAgreggation} value={aggregateBy}>
+              <option value="minute">minute</option>
+              <option value="hour">hour</option>
+            </select>
+          </div>
+        )}
+      </FlexLayout>
     );
   }
 }

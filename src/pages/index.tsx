@@ -33,9 +33,6 @@ class Home extends Component {
 
     this.ws.on('m', (message) => {
       const changedCoin = parseWebSocketMessage(message, this.state.coins);
-
-      console.log('message', message);
-      console.log('changedCoin', changedCoin);
       if (!changedCoin) return null;
 
       const coins = this.state.coins.map((coin) => {
@@ -90,6 +87,7 @@ class Home extends Component {
               width={500}
               height={300}
               showAxis={true}
+              showControls={true}
             />
           </PageSection>
         }

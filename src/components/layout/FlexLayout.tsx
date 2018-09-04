@@ -1,8 +1,17 @@
 import styled from 'styled-components';
 
-const FlexLayout = styled.div`
+type FlexLayoutProps = {
+  direction?: React.CSSProperties['flexDirection'];
+  alignItems?: React.CSSProperties['alignItems'];
+  justifyContent?: React.CSSProperties['justifyContent'];
+}
+
+const FlexLayout = styled<FlexLayoutProps, 'div'>('div')`
   display: flex;
-  align-items: center;
+  flex-direction: ${({ direction = 'row' }) => direction};
+
+  align-items: ${({ alignItems = 'center' }) => alignItems};
+  justify-content: ${({ justifyContent = 'center' }) => justifyContent};
 `;
 
 export default FlexLayout;
