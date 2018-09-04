@@ -4,6 +4,7 @@ import { Component, RefObject, createRef } from 'react';
 import { extent } from 'd3-array';
 import { AreaClosed } from '@vx/shape';
 import { curveMonotoneX } from '@vx/curve';
+import { AxisBottom, AxisRight } from '@vx/axis';
 import { scaleTime, scaleLinear } from '@vx/scale';
 
 import { CoinItem } from '../../services/CryptoService';
@@ -20,10 +21,11 @@ const xStock = (d: StockAreaItem) => new Date(d.time * 1000);
 const yStock = (d: StockAreaItem) => d.close;
 
 // styles
-const gutter = '10px';
+const gutter = 10;
 
 const PlotContainer = styled<Pick<Props, 'onClick'>, 'div'>('div')`
   color: white;
+  stroke: white;
   display: inline-block;
   position: relative;
 
@@ -31,8 +33,8 @@ const PlotContainer = styled<Pick<Props, 'onClick'>, 'div'>('div')`
 `;
 
 const CoinTopInfo = styled.div`
-  top: ${gutter};
-  left: ${gutter};
+  top: ${gutter * 2}px;
+  left: ${gutter * 2}px;
   position: absolute;
 
   display: flex;
@@ -51,13 +53,17 @@ const CoinIcon = styled.img`
 `;
 
 const CoinBottomInfo = styled.div`
-  left: ${gutter};
-  bottom: ${gutter};
+  left: ${gutter * 2}px;
+  bottom: ${gutter * 2.5}px;
   position: absolute;
 
   display: block;
   align-items: center;
   white-space: pre-line;
+
+  p {
+    margin: 0;
+  }
 `;
 
 type PercChangeIconProps = {
@@ -87,8 +93,8 @@ type Props = {
 
 class CoinStockArea extends Component<Props> {
   static defaultProps: Props = {
-    width: 300,
-    height: 160,
+    width: 360,
+    height: 220,
   };
 
   private svg: RefObject<SVGSVGElement>;
@@ -145,6 +151,7 @@ class CoinStockArea extends Component<Props> {
             fill={coinColors[name] || coinColors.defaultColor}
             width={width}
             height={height}
+            stroke="transparent"
           />
           <defs>
             <linearGradient
@@ -166,6 +173,22 @@ class CoinStockArea extends Component<Props> {
               />
             </linearGradient>
           </defs>
+
+          <AxisBottom
+            top={height - 25}
+            left={0}
+            scale={xScale}
+            hideTicks={true}
+            hideAxisLine={true}
+          />
+          <AxisRight
+            top={0}
+            left={width - 37.5}
+            scale={yScale}
+            stroke="#fff"
+            hideTicks={true}
+            hideAxisLine={true}
+          />
           <AreaClosed
             x={xStock}
             y={yStock}
