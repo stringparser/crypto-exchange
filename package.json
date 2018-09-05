@@ -2,8 +2,9 @@
   "name": "create-next-example-app",
   "scripts": {
     "dev": "nodemon src/server/index.ts",
-    "build": "next build && tsc --project tsconfig.server.json",
-    "start": "NODE_ENV=production node .next/production-server/index.js"
+    "build": "next build src && tsc --project tsconfig.server.json",
+    "start": "NODE_ENV=production node .next/server/index.js",
+    "export": "next export -o docs src"
   },
   "dependencies": {
     "@vx/axis": "0.0.173",
