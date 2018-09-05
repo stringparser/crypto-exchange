@@ -1,10 +1,10 @@
 {
-  "name": "create-next-example-app",
+  "name": "crypto-exchange",
   "scripts": {
     "dev": "nodemon src/server/index.ts",
     "build": "next build src && tsc --project tsconfig.server.json",
     "start": "NODE_ENV=production node .next/server/index.js",
-    "export": "next export -o docs src"
+    "export": "npm run build && next export -o docs src"
   },
   "dependencies": {
     "@vx/axis": "0.0.173",
