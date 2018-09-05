@@ -4,7 +4,7 @@ console.log('NODE_ENV', process.env.NODE_ENV);
 
 exports = module.exports = withTypescript({
   assetPrefix: process.env.NODE_ENV === 'production'
-    ? 'https://stringparser.github.io/crypto-exchange/docs/'
+    ? 'https://cdn.rawgit.com/stringparser/crypto-exchange/master/docs/'
     : '',
   pageExtensions: ['tsx', 'ts'],
 });
